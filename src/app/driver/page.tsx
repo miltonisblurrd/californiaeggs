@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { confirm } from "@ui-sdk/react/alert-dialog";
 import { toast } from "@ui-sdk/react/toast";
-import { Bar, Card, Choose, Notice, Page, Tag, btn, cx } from "@/components/ui";
+import { Bar, Card, Notice, Page, Tag, btn, cx } from "@/components/ui";
 import { customerOf, dayRoutes, invoiceTotal, productName, routeInvoices, routeTally, statusLabel } from "@/lib/derive";
 import { money } from "@/lib/format";
 import { actions, useDemo } from "@/lib/store";
@@ -34,13 +34,6 @@ export default function MyRoute() {
 
   return (
     <Page title={`Route ${route.number}`} sub={`${route.driver} · ${statusLabel(route.status)}`}>
-      <Choose
-        label="Whose route"
-        value={route.id}
-        onChange={(v) => v && actions.pickDriverRoute(v)}
-        options={routes.map((r) => ({ value: r.id, label: `Route ${r.number} · ${r.driver}` }))}
-      />
-
       {route.status === "calling" ? <Notice>Alma is still calling this route. Nothing to deliver yet.</Notice> : null}
       {route.status === "ready" ? (
         <Notice>

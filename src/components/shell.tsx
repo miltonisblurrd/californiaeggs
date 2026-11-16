@@ -121,13 +121,11 @@ export function Shell({ children }: { children: ReactNode }) {
     <>
       <header className="print:hidden sticky top-0 z-20 border-b border-line/80 bg-paper/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
-          <Link href="/" className="flex items-center gap-2">
+          <Link href="/" className="flex items-center gap-3">
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-ink text-[13px] font-black text-paper">CX</span>
-            <span className="leading-tight">
-              <span className="block text-[15px] font-bold tracking-tight">Cal Egg X</span>
-              <span className="block text-[11px] text-muted">{day(s.today)} · prototype</span>
-            </span>
+            <span className="text-sm font-medium text-ink">{day(s.today)}</span>
           </Link>
+          {path === "/" ? null : (
           <Menu>
             <MenuTrigger className="inline-flex h-10 items-center gap-2 rounded-2xl border border-line bg-card px-3 text-sm font-semibold">
               {seat ? seat.name : "Choose seat"}
@@ -154,6 +152,7 @@ export function Shell({ children }: { children: ReactNode }) {
               </MenuItem>
             </MenuContent>
           </Menu>
+          )}
         </div>
       </header>
 
