@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Menu, MenuContent, MenuItem, MenuSeparator, MenuTrigger } from "@ui-sdk/react/menu";
 import { OverlayHost } from "@ui-sdk/react/overlays";
 import { confirm } from "@ui-sdk/react/alert-dialog";
@@ -169,6 +169,47 @@ function AlmaDate() {
   );
 }
 
+function shakeEgg(egg: Element) {
+  egg.animate(
+    [
+      { transform: "rotate(0deg)" },
+      { transform: "rotate(-16deg)", offset: 0.2 },
+      { transform: "rotate(14deg)", offset: 0.4 },
+      { transform: "rotate(-10deg)", offset: 0.6 },
+      { transform: "rotate(6deg)", offset: 0.8 },
+      { transform: "rotate(0deg)" },
+    ],
+    { duration: 450, easing: "ease-in-out" },
+  );
+}
+
+function BootScreen() {
+  const egg = useRef<HTMLSpanElement>(null);
+  const [on, setOn] = useState(true);
+
+  useEffect(() => {
+    const shake = window.setTimeout(() => {
+      if (egg.current) shakeEgg(egg.current);
+    }, 700);
+    const done = window.setTimeout(() => setOn(false), 1200);
+    return () => {
+      window.clearTimeout(shake);
+      window.clearTimeout(done);
+    };
+  }, []);
+
+  if (!on) return null;
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-paper">
+      <span className="grid h-16 w-16 place-items-center rounded-2xl bg-ink text-4xl">
+        <span ref={egg} className="inline-block" style={{ transformOrigin: "center bottom" }}>
+          🥚
+        </span>
+      </span>
+    </div>
+  );
+}
+
 export function Shell({ children }: { children: ReactNode }) {
   const path = usePathname();
   const seat = seatFor(path);
@@ -208,10 +249,19 @@ export function Shell({ children }: { children: ReactNode }) {
 
   return (
     <>
+      <BootScreen />
       <header className="print:hidden sticky top-0 z-20 border-b border-line/80 bg-paper/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
-          <Link href="/" className="flex items-center gap-3">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-ink text-[13px] font-black text-paper">CX</span>
+          <Link href="/" className="flex items-center gap-3 no-underline">
+            <span
+              onPointerDown={(e) => {
+                const egg = e.currentTarget.firstElementChild;
+                if (egg) shakeEgg(egg);
+              }}
+              className="grid h-8 w-8 place-items-center rounded-xl bg-ink text-lg"
+            >
+              <span className="inline-block" style={{ transformOrigin: "center bottom" }}>🥚</span>
+            </span>
             {path.startsWith("/alma") || path.startsWith("/driver") || path.startsWith("/colin") ? null : <span className="text-sm font-medium text-ink">{day(s.today)}</span>}
           </Link>
           {path.startsWith("/alma") ? <AlmaDate /> : path.startsWith("/driver") ? <DriverDate /> : path.startsWith("/colin") ? <ColinRange /> : path === "/" || path.startsWith("/warehouse") || path.startsWith("/inputter") ? null : (
