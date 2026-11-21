@@ -4,18 +4,35 @@ import { useMemo, useState } from "react";
 import { Switch, SwitchThumb } from "@ui-sdk/react/switch";
 import { toast } from "@ui-sdk/react/toast";
 import { BoxStepper, Choose, Label, MoneyField, Page, Segments, Sheet, Tag, TextField, btn, cx } from "./ui";
-import { coolerRows, customerBalance, productName } from "@/lib/derive";
-import { money } from "@/lib/format";
+import { addDays, coolerRows, customerBalance, productName } from "@/lib/derive";
+import { day, money } from "@/lib/format";
+import { SCHEDULE } from "@/lib/data";
 import { actions, useDemo } from "@/lib/store";
 import type { Customer } from "@/lib/types";
 
-const ROUTE_DAYS = ["", "Mon", "Mon", "Mon", "Tue", "Tue", "Tue", "Tue", "Wed", "Wed", "Wed", "Wed", "Thu", "Thu", "Thu", "Thu", "Fri", "Fri", "Fri", "Fri"];
+const DAY_NAMES = ["", "Mon", "Tue", "Wed", "Thu", "Fri"];
+const ROUTES = Object.entries(SCHEDULE).flatMap(([day, routes]) =>
+  routes.map((r) => ({ number: r.number, driver: r.driver, day: DAY_NAMES[Number(day)] })),
+);
 
-export function CustomersScreen() {
+function routeOf(number: number) {
+  return ROUTES.find((r) => r.number === number) ?? { number, driver: "Driver", day: "" };
+}
+
+export function CustomersScreen({ forAlma = false }: { forAlma?: boolean }) {
   const s = useDemo();
   const [query, setQuery] = useState("");
   const [route, setRoute] = useState<string | null>("all");
   const [editing, setEditing] = useState<Customer | null>(null);
+
+  const anchor = forAlma && s.almaDate ? s.almaDate : s.today;
+  const [ay, am, ad] = anchor.split("-").map(Number);
+  const anchorWeekday = new Date(Date.UTC(ay, am - 1, ad)).getUTCDay();
+  const monday = addDays(anchor, anchorWeekday === 0 ? -6 : 1 - anchorWeekday);
+  const routeOptions = ROUTES.map((r) => {
+    const weekday = DAY_NAMES.indexOf(r.day);
+    return { value: String(r.number), label: `${r.driver} · ${day(addDays(monday, weekday - 1))}` };
+  });
 
   const list = s.customers
     .filter((c) => route === "all" || String(c.routeNo) === route)
@@ -43,7 +60,7 @@ export function CustomersScreen() {
   return (
     <Page
       title="Customers"
-      sub={`${s.customers.length} customers on 19 routes`}
+      sub={forAlma ? `${s.customers.length} customers` : `${s.customers.length} customers on 19 routes`}
       action={
         <button className={cx(btn.secondary, "min-h-10 px-4")} onClick={addNew}>
           Add
@@ -52,10 +69,10 @@ export function CustomersScreen() {
     >
       <TextField label="Search" value={query} onChange={setQuery} placeholder="Name or city" />
       <Choose
-        label="Route"
+        label={forAlma ? "Driver" : "Route"}
         value={route}
         onChange={setRoute}
-        options={[{ value: "all", label: "All routes" }, ...Array.from({ length: 19 }, (_, i) => ({ value: String(i + 1), label: `Route ${i + 1} · ${ROUTE_DAYS[i + 1]}` }))]}
+        options={[{ value: "all", label: "All drivers" }, ...routeOptions]}
       />
       <div className="flex flex-col gap-2">
         {list.map((c) => {
@@ -63,18 +80,19 @@ export function CustomersScreen() {
           const custom = Object.keys(c.prices ?? {}).length;
           return (
             <button key={c.id} onClick={() => setEditing(structuredClone(c))} className="flex items-center gap-3 rounded-3xl border border-line bg-card p-4 text-left active:scale-[0.99] transition">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-paper text-xs font-bold">
-                {c.routeNo}·{c.stop}
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-paper text-[10px] font-bold leading-none">
+                {routeOf(c.routeNo).driver.slice(0, 2)}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-[16px] font-semibold">{c.name}</p>
                 <p className="truncate text-xs text-muted">
-                  {c.city} · {c.usualOrder.map((l) => `${productName(s, l.productId)} ${l.boxes}`).join(", ") || "No usual order"}
+                  {c.city} · {routeOf(c.routeNo).driver}{forAlma ? "" : ` · stop ${c.stop}`}
+                  {c.usualOrder.length ? ` · ${c.usualOrder.map((l) => `${productName(s, l.productId)} ${l.boxes}`).join(", ")}` : ""}
                 </p>
               </div>
               <div className="flex shrink-0 flex-col items-end gap-1">
                 {c.standing ? <Tag>Standing</Tag> : null}
-                {custom ? <Tag tone="yolk">{`${custom} custom ${custom === 1 ? "price" : "prices"}`}</Tag> : null}
+                {!forAlma && custom ? <Tag tone="yolk">{`${custom} custom ${custom === 1 ? "price" : "prices"}`}</Tag> : null}
                 {bal > 0 ? <span className="text-xs font-semibold text-warn">Owes {money(bal)}</span> : null}
               </div>
             </button>
@@ -82,12 +100,12 @@ export function CustomersScreen() {
         })}
         {!list.length ? <p className="py-6 text-center text-sm text-muted">No customers match.</p> : null}
       </div>
-      {editing ? <CustomerSheet initial={editing} onClose={() => setEditing(null)} /> : null}
+      {editing ? <CustomerSheet initial={editing} forAlma={forAlma} routeOptions={routeOptions} onClose={() => setEditing(null)} /> : null}
     </Page>
   );
 }
 
-function CustomerSheet({ initial, onClose }: { initial: Customer; onClose: () => void }) {
+function CustomerSheet({ initial, forAlma, routeOptions, onClose }: { initial: Customer; forAlma: boolean; routeOptions: { value: string; label: string }[]; onClose: () => void }) {
   const s = useDemo();
   const [c, setC] = useState<Customer>(initial);
   const [adding, setAdding] = useState<string | null>(null);
@@ -101,7 +119,7 @@ function CustomerSheet({ initial, onClose }: { initial: Customer; onClose: () =>
 
   function save() {
     actions.saveCustomer({ ...c, name: c.name.trim(), city: c.city.trim(), terms: c.usual === "charge" ? "Net 30" : "COD" });
-    toast(isNew ? `${c.name} added to route ${c.routeNo}` : `${c.name} saved`, {
+    toast(isNew ? `${c.name} added to ${routeOf(c.routeNo).driver}` : `${c.name} saved`, {
       description: isNew ? "They’re on Alma’s call sheet the next time that route is called." : undefined,
     });
     onClose();
@@ -113,18 +131,27 @@ function CustomerSheet({ initial, onClose }: { initial: Customer; onClose: () =>
         <TextField label="Name" value={c.name} onChange={(v) => set({ name: v })} placeholder="Business name" />
         <TextField label="City" value={c.city} onChange={(v) => set({ city: v })} />
         <TextField label="Phone (for calls and texts)" value={c.phone ?? ""} onChange={(v) => set({ phone: v })} inputMode="numeric" />
-        <div className="grid grid-cols-2 gap-3">
+        {forAlma ? (
           <Choose
-            label="Route"
+            label="Driver"
             value={String(c.routeNo)}
             onChange={(v) => v && set({ routeNo: Number(v) })}
-            options={Array.from({ length: 19 }, (_, i) => ({ value: String(i + 1), label: `${i + 1} · ${ROUTE_DAYS[i + 1]}` }))}
+            options={routeOptions}
           />
-          <div className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium">Stop</span>
-            <BoxStepper value={c.stop} onChange={(n) => set({ stop: n ?? 1 })} min={1} label="Stop number" size="sm" />
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <Choose
+              label="Route"
+              value={String(c.routeNo)}
+              onChange={(v) => v && set({ routeNo: Number(v) })}
+              options={routeOptions}
+            />
+            <div className="flex flex-col gap-1.5">
+              <span className="text-sm font-medium">Stop</span>
+              <BoxStepper value={c.stop} onChange={(n) => set({ stop: n ?? 1 })} min={1} label="Stop number" size="sm" />
+            </div>
           </div>
-        </div>
+        )}
 
         <section className="flex flex-col gap-2">
           <Label>Usually pays</Label>
@@ -183,7 +210,7 @@ function CustomerSheet({ initial, onClose }: { initial: Customer; onClose: () =>
           />
         </section>
 
-        <section className="flex flex-col gap-1">
+        {forAlma ? null : <section className="flex flex-col gap-1">
           <Label>Prices</Label>
           <p className="text-xs text-muted">List price unless you set one. Cost is what’s in the cooler now, oldest box first.</p>
           {priced.map((id) => {
@@ -225,7 +252,7 @@ function CustomerSheet({ initial, onClose }: { initial: Customer; onClose: () =>
             placeholder="Choose"
             options={s.products.filter((p) => !priced.includes(p.id)).map((p) => ({ value: p.id, label: p.name }))}
           />
-        </section>
+        </section>}
 
         <button className={btn.primary} disabled={!ready} onClick={save}>
           {isNew ? "Add customer" : "Save"}

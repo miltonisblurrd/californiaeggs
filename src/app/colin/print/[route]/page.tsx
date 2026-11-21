@@ -17,8 +17,8 @@ export default function PrintRoute() {
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-4 px-4 pb-28 pt-4 print:p-0">
       <div className="flex flex-col gap-3 print:hidden">
-        <Link href="/alma/routes" className="text-sm font-medium text-muted">
-          ← Routes
+        <Link href={route ? `/colin/route/${route.id}` : "/colin/history"} className="text-sm font-medium text-muted">
+          ← Route record
         </Link>
         {route ? (
           <>
@@ -33,7 +33,7 @@ export default function PrintRoute() {
                 Print {invoices.length} invoices
               </button>
             ) : (
-              <Notice>Nothing printed for this route yet. Finish the call sheet first.</Notice>
+              <Notice>No invoices on this route yet. Alma hasn’t sent them out.</Notice>
             )}
           </>
         ) : (

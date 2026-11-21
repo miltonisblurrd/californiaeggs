@@ -24,6 +24,32 @@ function load() {
   } catch {
     state = SEED;
   }
+  const added = ensureAlmaHorizon(state);
+  if (added) {
+    try {
+      window.localStorage.setItem(KEY, JSON.stringify(state));
+    } catch {}
+  }
+}
+
+function ensureAlmaHorizon(s: DemoState) {
+  let target = s.today;
+  for (let i = 0; i < 4; i++) target = nextServiceDay(target);
+  let cursor = s.today;
+  let added = false;
+  while (cursor < target) {
+    cursor = nextServiceDay(cursor);
+    for (const p of SCHEDULE[weekday(cursor)] ?? []) {
+      const id = `r${p.number}-${cursor}`;
+      if (s.routes.some((r) => r.date === cursor && r.number === p.number)) continue;
+      s.routes.push({ id, number: p.number, date: cursor, driver: p.driver, status: "calling", roa: { count: 0, amount: 0 } });
+      s.customers
+        .filter((c) => c.routeNo === p.number)
+        .forEach((c) => s.orders.push({ customerId: c.id, routeId: id, lines: c.standing ? c.usualOrder.map((l) => ({ ...l })) : [], called: false }));
+      added = true;
+    }
+  }
+  return added;
 }
 
 function emit() {
@@ -147,12 +173,40 @@ export const actions = {
   pickDriverRoute(routeId: string) {
     update((s) => {
       s.driverRoute = routeId;
+      const route = s.routes.find((r) => r.id === routeId);
+      if (route) s.driverDate = route.date;
+    });
+  },
+
+  pickDriverDate(date: string) {
+    update((s) => {
+      s.driverDate = date;
+      if (date === "week") return;
+      const name = s.routes.find((r) => r.id === s.driverRoute)?.driver;
+      const route = s.routes.find((r) => r.driver === name && r.date === date);
+      if (route) s.driverRoute = route.id;
     });
   },
 
   pickAlmaRoute(routeId: string) {
     update((s) => {
       s.almaRoute = routeId;
+      const route = s.routes.find((r) => r.id === routeId);
+      if (route) s.almaDate = route.date;
+    });
+  },
+
+  pickColinRange(range: string) {
+    update((s) => {
+      s.colinRange = range;
+    });
+  },
+
+  pickAlmaDate(date: string) {
+    update((s) => {
+      s.almaDate = date;
+      const routes = s.routes.filter((r) => r.date === date).sort((a, b) => a.number - b.number);
+      if (!routes.some((r) => r.id === s.almaRoute) && routes[0]) s.almaRoute = routes[0].id;
     });
   },
 
@@ -163,6 +217,7 @@ export const actions = {
       if (line) line.boxes = boxes;
       else order.lines.push({ productId, boxes });
       order.called = true;
+      order.outcome = undefined;
     });
   },
 
@@ -184,6 +239,7 @@ export const actions = {
       const order = findOrder(s, customerId, routeId);
       order.lines = lastOrder(s, customerId).lines.map((l) => ({ ...l }));
       order.called = true;
+      order.outcome = undefined;
     });
   },
 
@@ -201,11 +257,22 @@ export const actions = {
     });
   },
 
-  markNoOrder(routeId: string, customerId: string) {
+  markNoOrder(routeId: string, customerId: string, outcome: "no-order" | "no-delivery" = "no-order") {
     update((s) => {
       const order = findOrder(s, customerId, routeId);
       order.lines = [];
+      order.swap = undefined;
       order.called = true;
+      order.outcome = outcome;
+    });
+  },
+
+  reorderStops(routeNo: number, customerIds: string[]) {
+    update((s) => {
+      customerIds.forEach((id, i) => {
+        const c = s.customers.find((x) => x.id === id);
+        if (c && c.routeNo === routeNo) c.stop = i + 1;
+      });
     });
   },
 
@@ -394,7 +461,10 @@ export const actions = {
       const todays = s.routes.filter((r) => r.date === tomorrow).sort((a, b) => a.number - b.number);
       if (todays[0]) s.driverRoute = todays[0].id;
       const nexts = s.routes.filter((r) => r.date === next).sort((a, b) => a.number - b.number);
-      if (nexts[0]) s.almaRoute = nexts[0].id;
+      if (nexts[0]) {
+        s.almaRoute = nexts[0].id;
+        s.almaDate = next;
+      }
     });
   },
 

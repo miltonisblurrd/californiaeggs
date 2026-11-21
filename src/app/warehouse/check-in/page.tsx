@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { confirm } from "@ui-sdk/react/alert-dialog";
 import { toast } from "@ui-sdk/react/toast";
-import { Card, Label, Notice, Page, Row, Tag, btn, cx } from "@/components/ui";
+import { Card, Label, Notice, Page, Row, Sheet, Tag, btn, cx } from "@/components/ui";
 import { day, time } from "@/lib/format";
 import { productName, routeReturns, routeSheet } from "@/lib/derive";
 import { actions, useDemo } from "@/lib/store";
@@ -16,6 +16,7 @@ export default function CheckIn() {
   const cameBack = s.routes.filter((r) => ["back", "checkedIn", "audited", "entered"].includes(r.status));
   const waiting = cameBack.filter((r) => !r.managerSigned).sort((a, b) => a.number - b.number);
   const done = cameBack.filter((r) => r.managerSigned).sort((a, b) => b.number - a.number);
+  const [openId, setOpenId] = useState<string | null>(null);
 
   return (
     <Page title="Check in" sub="Boxes that came back on the truck. Matches the Eggs In line on the route sheet.">
@@ -30,12 +31,69 @@ export default function CheckIn() {
           <Label>Checked in</Label>
           <div className="mt-1">
             {done.map((r) => (
-              <Row key={r.id} left={`Route ${r.number} · ${r.driver}`} sub={`${day(r.date)} · signed by ${r.managerSigned ?? "Alejandro"}`} right={<Tag tone="good">Signed</Tag>} />
+              <button key={r.id} onClick={() => setOpenId(r.id)} className="block w-full text-left">
+                <Row left={r.driver} sub={`${day(r.date)} · signed by ${r.managerSigned ?? "Alejandro"}`} right={<Tag tone="good">Signed</Tag>} />
+              </button>
             ))}
           </div>
         </Card>
       ) : null}
+      <Sheet open={!!openId} onOpenChange={(o) => !o && setOpenId(null)} title={s.routes.find((r) => r.id === openId)?.driver ?? "Checked in"}>
+        {openId ? <CheckedInDetail routeId={openId} /> : null}
+      </Sheet>
     </Page>
+  );
+}
+
+function CheckedInDetail({ routeId }: { routeId: string }) {
+  const s = useDemo();
+  const r = s.routes.find((x) => x.id === routeId)!;
+  const sheet = routeSheet(s, r.id);
+  const returns = routeReturns(s, r.id);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-muted">
+        {day(r.date)} · back {time(r.backAt)} · signed by {r.managerSigned ?? "Alejandro"}
+      </p>
+      <div className="grid grid-cols-3 gap-2 rounded-2xl bg-paper p-3 text-center">
+        <div>
+          <p className="text-xl font-bold tabular-nums">{sheet.eggsOut}</p>
+          <p className="text-xs text-muted">Eggs out</p>
+        </div>
+        <div>
+          <p className="text-xl font-bold tabular-nums">{sheet.eggsIn}</p>
+          <p className="text-xs text-muted">Eggs in</p>
+        </div>
+        <div>
+          <p className="text-xl font-bold tabular-nums">{sheet.eggsSold}</p>
+          <p className="text-xs text-muted">Sold</p>
+        </div>
+      </div>
+      <div>
+        {returns.length ? (
+          returns.map((x, i) => (
+            <Row
+              key={i}
+              left={productName(s, x.productId)}
+              sub={x.why === "expired" ? `${WHY[x.why]} · stays out of the cooler` : WHY[x.why]}
+              right={<span className={cx("font-bold", x.why === "expired" ? "text-bad" : "text-good")}>{x.boxes}</span>}
+            />
+          ))
+        ) : (
+          <p className="py-2 text-sm text-muted">Nothing came back. Every box was delivered.</p>
+        )}
+      </div>
+      <div>
+        <Label>Warehouse manager</Label>
+        {r.managerSignature ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={r.managerSignature} alt={`${r.managerSigned ?? "Alejandro"} signature`} className="mt-2 h-24 w-full rounded-2xl border border-line bg-white object-contain" />
+        ) : (
+          <p className="mt-2 text-sm text-muted">{r.managerSigned ?? "Alejandro"} signed on paper. This check-in was already done before the app.</p>
+        )}
+      </div>
+    </div>
   );
 }
 

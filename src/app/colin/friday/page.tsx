@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { confirm } from "@ui-sdk/react/alert-dialog";
 import { toast } from "@ui-sdk/react/toast";
-import { Card, Label, Notice, Page, Row, Tag, btn, cx } from "@/components/ui";
+import { Card, Label, Notice, Page, Row, Sheet, Tag, btn, cx } from "@/components/ui";
 import { productName } from "@/lib/derive";
 import { money, when } from "@/lib/format";
 import { actions, useDemo } from "@/lib/store";
+import type { Count } from "@/lib/types";
 
 export default function FridayApprove() {
   const s = useDemo();
@@ -93,19 +94,38 @@ export default function FridayApprove() {
   );
 }
 
-function Past({ past }: { past: { id: string; at: string; by: string; approvedAt?: string }[] }) {
+function Past({ past }: { past: Count[] }) {
   const s = useDemo();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const open = past.find((c) => c.id === openId);
   if (!past.length) return null;
+  const rows = open
+    ? s.products.map((p) => {
+        const typed = open.typed[p.id] ?? 0;
+        const expected = open.expected[p.id] ?? 0;
+        return { p, typed, expected, diff: typed - expected };
+      })
+    : [];
   return (
     <section className="flex flex-col gap-2">
       <Label>Approved</Label>
       {past.map((c) => (
-        <Card key={c.id}>
+        <button key={c.id} onClick={() => setOpenId(c.id)} className="rounded-3xl border border-line bg-card p-4 text-left active:scale-[0.99] transition">
           <p className="text-sm">
             {c.by} counted {when(c.at, s.today)} · approved {c.approvedAt ? when(c.approvedAt, s.today) : ""}
           </p>
-        </Card>
+        </button>
       ))}
+      <Sheet open={!!open} onOpenChange={(o) => !o && setOpenId(null)} title={open ? `${open.by}'s count` : ""} description={open ? `Counted ${when(open.at, s.today)}` : ""}>
+        {rows.map((r) => (
+          <Row
+            key={r.p.id}
+            left={productName(s, r.p.id)}
+            sub={`Expected ${r.expected} · counted ${r.typed}`}
+            right={r.diff === 0 ? <Tag tone="good">OK</Tag> : <Tag tone={r.diff < 0 ? "bad" : "warn"}>{`${r.diff > 0 ? "+" : ""}${r.diff}`}</Tag>}
+          />
+        ))}
+      </Sheet>
     </section>
   );
 }

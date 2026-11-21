@@ -337,7 +337,7 @@ export function Sheet({
   return (
     <Drawer open={open} onOpenChange={onOpenChange} side="bottom">
       <DrawerBackdrop className="bg-black/35" />
-      <DrawerContent className="mx-auto flex max-h-[88dvh] w-full max-w-xl flex-col rounded-t-[28px] bg-paper pb-[env(safe-area-inset-bottom)]">
+      <DrawerContent className="sheet-up mx-auto flex max-h-[88dvh] w-full max-w-xl flex-col rounded-t-[28px] bg-paper pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto mt-2.5 h-1.5 w-10 rounded-full bg-line" aria-hidden />
         <div className="flex items-start justify-between gap-3 px-5 pt-3">
           <div>
@@ -347,6 +347,47 @@ export function Sheet({
           <DrawerClose className={btn.ghost}>Close</DrawerClose>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-6 pt-4">{children}</div>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
+export function CautionSheet({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+}) {
+  return (
+    <Drawer open={open} onOpenChange={onOpenChange} side="bottom">
+      <DrawerBackdrop className="bg-black/35" />
+      <DrawerContent className="sheet-up mx-auto flex w-full max-w-xl flex-col gap-4 rounded-t-[28px] border-t border-amber-200 bg-amber-50 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-2.5">
+        <div className="mx-auto h-1.5 w-10 rounded-full bg-amber-200" aria-hidden />
+        <div>
+          <DrawerTitle className="text-xl font-bold tracking-tight">{title}</DrawerTitle>
+          <DrawerDescription className="mt-1.5 text-[15px] leading-relaxed text-ink/75">{description}</DrawerDescription>
+        </div>
+        <div className="flex flex-col gap-2">
+          <button
+            className={`${btn.primary} w-full`}
+            onClick={() => {
+              onOpenChange(false);
+              onConfirm();
+            }}
+          >
+            {confirmLabel}
+          </button>
+          <DrawerClose className={`${btn.secondary} w-full`}>Cancel</DrawerClose>
+        </div>
       </DrawerContent>
     </Drawer>
   );

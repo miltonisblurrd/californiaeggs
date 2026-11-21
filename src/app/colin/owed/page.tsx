@@ -7,6 +7,12 @@ import { balances, customerBalance, customerLedger, customerOf } from "@/lib/der
 import { day, money } from "@/lib/format";
 import { actions, useDemo } from "@/lib/store";
 
+function driverWhen(s: ReturnType<typeof useDemo>, routeNo: number) {
+  const routes = s.routes.filter((r) => r.number === routeNo).sort((a, b) => a.date.localeCompare(b.date));
+  const next = routes.find((r) => r.date >= s.today) ?? routes[routes.length - 1];
+  return next ? `${day(next.date)} · ${next.driver}` : "No driver";
+}
+
 export default function Owed() {
   const s = useDemo();
   const list = balances(s);
@@ -31,7 +37,7 @@ export default function Owed() {
             <div className="min-w-0 flex-1">
               <p className="truncate text-[16px] font-semibold">{b.customer.name}</p>
               <p className="truncate text-xs text-muted">
-                Route {b.customer.routeNo} · {b.customer.city}
+                {driverWhen(s, b.customer.routeNo)} · {b.customer.city}
                 {b.oldest ? ` · oldest ${day(b.oldest)}` : ""}
               </p>
             </div>
@@ -70,7 +76,7 @@ function Account({ customerId, onClose }: { customerId: string; onClose: () => v
             {c.terms}
             {c.openTally ? " · open tally" : ""}
             <br />
-            Route {c.routeNo}
+            {driverWhen(s, c.routeNo)}
           </p>
         </div>
 

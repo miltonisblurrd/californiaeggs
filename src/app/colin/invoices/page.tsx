@@ -14,10 +14,10 @@ export default function Invoices() {
   const shouldBeIn = c.created - c.stillOut.length;
 
   return (
-    <Page title="Invoices" sub="Every number printed should come back and be entered once">
+    <Page title="Invoices" sub="Every invoice sent out should come back and be entered once">
       <Card>
         <div className="grid grid-cols-3 gap-3">
-          <Big value={c.created} label="Printed" />
+          <Big value={c.created} label="Sent out" />
           <Big value={c.cameBack.length} label="Came back" />
           <Big value={accounted} label="Entered" tone={accounted === shouldBeIn ? "good" : "warn"} />
         </div>

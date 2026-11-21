@@ -42,7 +42,7 @@ export default function RouteBag() {
   }
 
   return (
-    <Page title="Route bag" sub={`Route ${route.number} · ${route.driver} · ${day(route.date)}`}>
+    <Page title="Route bag" sub={`${route.driver} · ${day(route.date)}`}>
       {route.status === "out" && left > 0 ? (
         <Notice>
           {left} {left === 1 ? "stop is" : "stops are"} still open.{" "}
@@ -54,7 +54,7 @@ export default function RouteBag() {
       {["calling", "ready", "loaded"].includes(route.status) ? <Notice tone="neutral">This route hasn’t gone out yet.</Notice> : null}
       {turnedIn ? <Notice tone="good">In the lockbox. Colin audits it this week.</Notice> : null}
 
-      <RouteSheetCard routeId={route.id} roa={turnedIn ? undefined : roa} />
+      <RouteSheetCard routeId={route.id} roa={turnedIn ? undefined : roa} showNumber={false} />
 
       {route.status === "out" ? (
         <>

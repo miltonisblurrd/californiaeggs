@@ -5,7 +5,7 @@ import { money } from "@/lib/format";
 import { useDemo } from "@/lib/store";
 import { cx } from "./ui";
 
-export function RouteSheetCard({ routeId, roa }: { routeId: string; roa?: { count: number; amount: number } }) {
+export function RouteSheetCard({ routeId, roa, showNumber = true }: { routeId: string; roa?: { count: number; amount: number }; showNumber?: boolean }) {
   const s = useDemo();
   const sheet = routeSheet(s, routeId);
   const route = sheet.route;
@@ -17,7 +17,7 @@ export function RouteSheetCard({ routeId, roa }: { routeId: string; roa?: { coun
     <div className="overflow-hidden rounded-3xl border border-line bg-card">
       <div className="flex items-center justify-between border-b border-line px-4 py-3">
         <p className="font-serif text-lg font-bold italic">Cal Egg X · Route sheet</p>
-        <p className="text-sm font-semibold">#{route.number}</p>
+        {showNumber ? <p className="text-sm font-semibold">#{route.number}</p> : null}
       </div>
       <SheetGrid
         rows={[

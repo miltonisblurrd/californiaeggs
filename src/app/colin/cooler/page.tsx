@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { Tabs, TabsList, TabsPanel, TabsTab } from "@ui-sdk/react/tabs";
 import { MoveTimeline } from "@/components/moves";
-import { PullSheet } from "@/components/pull-sheet";
-import { Big, Card, Label, Page, Sheet, Tag, btn, cx } from "@/components/ui";
+import { Big, Card, Label, Page, Sheet, Tag, cx } from "@/components/ui";
 import { coolerRows, coolerTotals, vendorName } from "@/lib/derive";
 import { day, money } from "@/lib/format";
 import { useDemo } from "@/lib/store";
@@ -17,25 +16,12 @@ export default function CoolerPage() {
   const rows = coolerRows(s);
   const totals = coolerTotals(s);
   const [openId, setOpenId] = useState<string | null>(null);
-  const [pullOpen, setPullOpen] = useState(false);
-  const [pullProduct, setPullProduct] = useState<string | undefined>();
   const open = rows.find((r) => r.product.id === openId);
 
   return (
     <Page
       title="Cooler"
       sub="Live. Every box in and out, with what you paid."
-      action={
-        <button
-          className={btn.secondary}
-          onClick={() => {
-            setPullProduct(undefined);
-            setPullOpen(true);
-          }}
-        >
-          Pull
-        </button>
-      }
     >
       <Card>
         <Big value={money(totals.dollars)} label="Cooler value at cost" />
@@ -134,17 +120,6 @@ export default function CoolerPage() {
                 <strong>{money(open.avgCost)}</strong>. Selling at {money(open.product.price)} leaves about {money(open.product.price - open.avgCost)} a box.
               </p>
             ) : null}
-            <button
-              className={btn.secondary}
-              disabled={!open.boxes}
-              onClick={() => {
-                setPullProduct(open.product.id);
-                setOpenId(null);
-                setPullOpen(true);
-              }}
-            >
-              Pull {open.product.name}
-            </button>
             <div>
               <Label>History</Label>
               <div className="mt-3">
@@ -155,7 +130,6 @@ export default function CoolerPage() {
         ) : null}
       </Sheet>
 
-      <PullSheet key={pullProduct ?? "any"} open={pullOpen} onOpenChange={setPullOpen} who="Colin" productId={pullProduct} />
     </Page>
   );
 }

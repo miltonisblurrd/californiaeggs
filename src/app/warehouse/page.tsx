@@ -36,7 +36,7 @@ export default function MorningCount() {
   return (
     <Page
       title="Morning count"
-      sub="Same lines as the paper sheet. The app already knows what should be there."
+      sub="What you see in the cooler before the trucks are loaded."
       action={
         <button className={btn.secondary} onClick={() => setPullOpen(true)}>
           Pull

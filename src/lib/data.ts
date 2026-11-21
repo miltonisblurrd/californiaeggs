@@ -289,6 +289,10 @@ const ROUTE_META: { number: number; date: string; driver: string; status: RouteS
   { number: 6, date: TODAY, driver: "Luis", status: "out" },
   { number: 7, date: TODAY, driver: "Manny", status: "loaded" },
   ...SCHEDULE[3].map((r) => ({ ...r, date: TOMORROW, status: "calling" as RouteStatus })),
+  ...["2026-11-19", "2026-11-20", "2026-11-23"].flatMap((date) => {
+    const weekday = new Date(`${date}T12:00:00`).getDay();
+    return SCHEDULE[weekday].map((r) => ({ ...r, date, status: "calling" as RouteStatus }));
+  }),
 ];
 
 export function routeId(number: number, date?: string) {
@@ -457,6 +461,7 @@ export function buildSeed(): DemoState {
     nextInvoice,
     driverRoute: "r4",
     almaRoute: routeId(8, TOMORROW),
+    almaDate: TOMORROW,
   };
 
   const r1Sheet = routeSheet(state, "r1");

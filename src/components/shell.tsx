@@ -10,6 +10,7 @@ import { toast } from "@ui-sdk/react/toast";
 import { actions, useDemo, useLoaded } from "@/lib/store";
 import { day } from "@/lib/format";
 import { dayRoutes, nextServiceDay } from "@/lib/derive";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ui-sdk/react/select";
 import { cx } from "./ui";
 
 export type SeatKey = "colin" | "alma" | "warehouse" | "driver" | "inputter";
@@ -21,7 +22,7 @@ export const SEATS: { key: SeatKey; name: string; role: string; home: string; ta
     role: "Owner",
     home: "/colin",
     tabs: [
-      { href: "/colin", label: "Today" },
+      { href: "/colin", label: "Home" },
       { href: "/colin/cooler", label: "Cooler" },
       { href: "/colin/audit", label: "Audit" },
       { href: "/colin/invoices", label: "Invoices" },
@@ -68,7 +69,7 @@ export const SEATS: { key: SeatKey; name: string; role: string; home: string; ta
     name: "Inputter",
     role: "QuickBooks entry",
     home: "/inputter",
-    tabs: [{ href: "/inputter", label: "To enter" }],
+    tabs: [{ href: "/inputter", label: "Enter in QuickBooks" }],
   },
 ];
 
@@ -78,6 +79,94 @@ function seatFor(path: string) {
 
 function activeTab(path: string, tabs: { href: string }[]) {
   return [...tabs].sort((a, b) => b.href.length - a.href.length).find((t) => path === t.href || path.startsWith(`${t.href}/`))?.href;
+}
+
+function ColinRange() {
+  const s = useDemo();
+  const dates = [...new Set(s.routes.map((r) => r.date))].sort();
+  const value = s.colinRange && (s.colinRange === "30" || s.colinRange === "90" || s.colinRange === "ytd" || s.colinRange === "mom" || s.colinRange === "yoy" || dates.includes(s.colinRange)) ? s.colinRange : s.today;
+  const presets = [
+    { value: "30", label: "Last 30 days" },
+    { value: "90", label: "Last 90 days" },
+    { value: "ytd", label: "Year to date" },
+    { value: "mom", label: "Month over month" },
+    { value: "yoy", label: "Year over year" },
+  ];
+  return (
+    <Select
+      items={[{ value: s.today, label: day(s.today) }, ...presets, ...dates.filter((d) => d !== s.today).map((d) => ({ value: d, label: day(d) }))]}
+      value={value}
+      onValueChange={(v) => v && actions.pickColinRange(v)}
+    >
+      <SelectTrigger className="inline-flex h-10 max-w-[11rem] items-center gap-2 rounded-2xl border border-line bg-card px-3 text-sm font-semibold">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="max-h-72 min-w-48 overflow-auto rounded-2xl border border-line bg-card p-1 shadow-lg">
+        {dates.map((d) => (
+          <SelectItem key={d} value={d} className="flex min-h-11 items-center rounded-xl px-3 text-[15px] data-highlighted:bg-line/60 data-selected:font-semibold">
+            {day(d)}
+          </SelectItem>
+        ))}
+        {presets.map((p) => (
+          <SelectItem key={p.value} value={p.value} className="flex min-h-11 items-center rounded-xl px-3 text-[15px] data-highlighted:bg-line/60 data-selected:font-semibold">
+            {p.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function DriverDate() {
+  const s = useDemo();
+  const current = s.routes.find((r) => r.id === s.driverRoute);
+  const dates = [...new Set(s.routes.filter((r) => r.driver === current?.driver).map((r) => r.date))].sort();
+  const value = s.driverDate === "week" || (s.driverDate && dates.includes(s.driverDate)) ? s.driverDate : current?.date ?? dates[0];
+  return (
+    <Select
+      items={[{ value: "week", label: "This week" }, ...dates.map((d) => ({ value: d, label: day(d) }))]}
+      value={value}
+      onValueChange={(v) => v && actions.pickDriverDate(v)}
+    >
+      <SelectTrigger className="inline-flex h-10 items-center gap-2 rounded-2xl border border-line bg-card px-3 text-sm font-semibold">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="max-h-72 min-w-44 overflow-auto rounded-2xl border border-line bg-card p-1 shadow-lg">
+        <SelectItem value="week" className="flex min-h-11 items-center rounded-xl px-3 text-[15px] data-highlighted:bg-line/60 data-selected:font-semibold">
+          This week
+        </SelectItem>
+        {dates.map((d) => (
+          <SelectItem key={d} value={d} className="flex min-h-11 items-center rounded-xl px-3 text-[15px] data-highlighted:bg-line/60 data-selected:font-semibold">
+            {day(d)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function AlmaDate() {
+  const s = useDemo();
+  const dates = [...new Set(s.routes.map((r) => r.date))].sort();
+  const value = s.almaDate && dates.includes(s.almaDate) ? s.almaDate : dates.find((d) => d > s.today) ?? dates[dates.length - 1];
+  return (
+    <Select
+      items={dates.map((d) => ({ value: d, label: day(d) }))}
+      value={value}
+      onValueChange={(v) => v && actions.pickAlmaDate(v)}
+    >
+      <SelectTrigger className="inline-flex h-10 items-center gap-2 rounded-2xl border border-line bg-card px-3 text-sm font-semibold">
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent className="max-h-72 min-w-44 overflow-auto rounded-2xl border border-line bg-card p-1 shadow-lg">
+        {dates.map((d) => (
+          <SelectItem key={d} value={d} className="flex min-h-11 items-center rounded-xl px-3 text-[15px] data-highlighted:bg-line/60 data-selected:font-semibold">
+            {day(d)}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
 }
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -123,9 +212,9 @@ export function Shell({ children }: { children: ReactNode }) {
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
           <Link href="/" className="flex items-center gap-3">
             <span className="grid h-8 w-8 place-items-center rounded-xl bg-ink text-[13px] font-black text-paper">CX</span>
-            <span className="text-sm font-medium text-ink">{day(s.today)}</span>
+            {path.startsWith("/alma") || path.startsWith("/driver") || path.startsWith("/colin") ? null : <span className="text-sm font-medium text-ink">{day(s.today)}</span>}
           </Link>
-          {path === "/" ? null : (
+          {path.startsWith("/alma") ? <AlmaDate /> : path.startsWith("/driver") ? <DriverDate /> : path.startsWith("/colin") ? <ColinRange /> : path === "/" || path.startsWith("/warehouse") || path.startsWith("/inputter") ? null : (
           <Menu>
             <MenuTrigger className="inline-flex h-10 items-center gap-2 rounded-2xl border border-line bg-card px-3 text-sm font-semibold">
               {seat ? seat.name : "Choose seat"}
@@ -182,7 +271,7 @@ export function Shell({ children }: { children: ReactNode }) {
         </nav>
       ) : null}
 
-      <OverlayHost />
+      <OverlayHost toast={{ side: "top", align: "center" }} />
     </>
   );
 }

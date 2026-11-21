@@ -3,5 +3,5 @@
 import { CustomersScreen } from "@/components/customers-screen";
 
 export default function Customers() {
-  return <CustomersScreen />;
+  return <CustomersScreen forAlma />;
 }

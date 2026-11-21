@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { SEATS } from "@/components/shell";
 import { Card, Page } from "@/components/ui";
-import { dayRoutes } from "@/lib/derive";
+import { routeOrders } from "@/lib/derive";
+import { day } from "@/lib/format";
 import { actions, useDemo } from "@/lib/store";
+
+const FINISHED = ["back", "checkedIn", "audited", "entered"];
 
 const GROUPS = [
   { title: "Owner Operations", keys: ["colin"] },
@@ -14,7 +17,13 @@ const GROUPS = [
 
 export default function Home() {
   const s = useDemo();
-  const drivers = dayRoutes(s, s.today);
+  const names = [...new Set(s.routes.map((r) => r.driver))].sort();
+  const drivers = names.map((name) => {
+    const routes = s.routes.filter((r) => r.driver === name).sort((a, b) => a.date.localeCompare(b.date));
+    const last = [...routes].reverse().find((r) => r.date < s.today || FINISHED.includes(r.status));
+    const next = routes.find((r) => r.date >= s.today && !FINISHED.includes(r.status)) ?? routes[routes.length - 1];
+    return { name, last, next };
+  });
 
   return (
     <Page title="Good Morning," sub="Pick up where you left off. The trucks, the calls, and the cooler are already moving.">
@@ -39,16 +48,16 @@ export default function Home() {
       <section className="flex flex-col gap-2">
         <h2 className="text-[11px] font-semibold uppercase tracking-[0.12em] text-ink">Drivers</h2>
         <div className="grid grid-cols-2 gap-3">
-          {drivers.map((r) => (
+          {drivers.map(({ name, last, next }) => (
             <Link
-              key={r.id}
+              key={name}
               href="/driver"
-              onClick={() => actions.pickDriverRoute(r.id)}
-              className="block min-h-28 rounded-3xl border border-line bg-card p-4 active:scale-[0.99] transition"
+              onClick={() => next && actions.pickDriverRoute(next.id)}
+              className="col-span-2 block rounded-3xl border border-line bg-card p-4 active:scale-[0.99] transition"
             >
-              <p className="text-lg font-bold">{r.driver}</p>
-              <p className="text-sm text-muted">Route {r.number}</p>
-              <p className="mt-3 text-xs text-muted">My route · Route bag</p>
+              <p className="text-lg font-bold">{name}</p>
+              <p className="mt-2 text-sm text-muted">Last drop off {last ? day(last.date) : "—"}</p>
+              <p className="text-sm text-ink">{next ? `Next ${day(next.date)} · ${routeOrders(s, next.id).length} orders` : "No route planned"}</p>
             </Link>
           ))}
         </div>

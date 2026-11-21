@@ -34,6 +34,9 @@ export default function RouteRecord() {
             </p>
           </div>
           <RouteSheetCard routeId={route.id} />
+          <Link href={`/colin/print/${route.id}`} className="text-center text-sm font-medium text-muted underline">
+            Print paper copies of these invoices
+          </Link>
           {audit ? (
             <Card>
               <Label>Audit</Label>

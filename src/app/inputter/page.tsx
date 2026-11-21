@@ -14,7 +14,7 @@ export default function Inputter() {
   const routes = s.routes.filter((r) => r.status === "audited" || r.status === "entered").sort((a, b) => a.date.localeCompare(b.date) || a.number - b.number);
 
   return (
-    <Page title="To enter" sub="Audited bags. Enter each invoice in QuickBooks, then check it off.">
+    <Page title="Enter in QuickBooks" sub="Audited bags. Enter each invoice in QuickBooks, then check it off.">
       {routes.length === 0 ? <Notice tone="neutral">Nothing audited yet. Colin audits bags first.</Notice> : null}
       {routes.map((r) => {
         const invs = routeInvoices(s, r.id).filter((i) => i.status !== "open");

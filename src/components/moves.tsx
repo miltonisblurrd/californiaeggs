@@ -10,7 +10,7 @@ import {
   TimelineTitle,
 } from "@ui-sdk/react/timeline";
 import { productName, vendorName } from "@/lib/derive";
-import { when } from "@/lib/format";
+import { day, when } from "@/lib/format";
 import type { DemoState, Move } from "@/lib/types";
 import { cx } from "./ui";
 
@@ -22,6 +22,12 @@ const KIND: Record<Move["kind"], string> = {
   expired: "Expired back",
   count: "Count",
 };
+
+function moveNote(s: DemoState, m: Move) {
+  const route = m.routeId ? s.routes.find((r) => r.id === m.routeId) : undefined;
+  const whenDate = day(route?.date ?? m.at);
+  return (m.note ?? "").replace(/routes?\s+\d+(?:\s*,\s*\d+)*/gi, whenDate);
+}
 
 export function MoveTimeline({ s, moves, label }: { s: DemoState; moves: Move[]; label: string }) {
   const list = [...moves].sort((a, b) => b.at.localeCompare(a.at));
@@ -46,7 +52,7 @@ export function MoveTimeline({ s, moves, label }: { s: DemoState; moves: Move[];
             <TimelineDescription className="text-xs text-muted">
               {m.who}
               {m.vendorId ? ` · ${vendorName(s, m.vendorId)}` : ""}
-              {m.note ? ` · ${m.note}` : ""}
+              {moveNote(s, m) ? ` · ${moveNote(s, m)}` : ""}
             </TimelineDescription>
             <TimelineTime dateTime={m.at} className="text-xs text-muted">
               {when(m.at, s.today)}

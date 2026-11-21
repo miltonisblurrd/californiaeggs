@@ -245,7 +245,7 @@ export function balances(s: DemoState) {
 export function statusLabel(status: Route["status"]) {
   return {
     calling: "Alma is calling",
-    ready: "Invoices printed",
+    ready: "Invoices sent",
     loaded: "Loaded",
     out: "On the route",
     back: "Bag in lockbox",

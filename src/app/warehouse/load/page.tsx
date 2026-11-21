@@ -19,13 +19,13 @@ export default function Load() {
     const tally = routeTally(s, routeId);
     const total = tally.reduce((n, t) => n + t.boxes, 0);
     const yes = await confirm({
-      title: `Route ${r.number} loaded?`,
+      title: `${r.driver}'s truck loaded?`,
       description: `${total} boxes come out of the cooler for ${r.driver}. Oldest boxes go first.`,
       confirmLabel: "Truck is loaded",
     });
     if (!yes) return;
     actions.confirmLoad(routeId);
-    toast(`Route ${r.number} loaded`, { description: `${total} boxes out of the cooler.` });
+    toast(`${r.driver}'s truck loaded`, { description: `${total} boxes out of the cooler.` });
   }
 
   return (
@@ -41,7 +41,7 @@ export default function Load() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-lg font-bold">
-                  Route {r.number} · {r.driver}
+                  {r.driver}
                 </p>
                 <p className="text-sm text-muted">
                   {invoices ? `${invoices} invoices · ` : ""}

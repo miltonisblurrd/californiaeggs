@@ -59,3 +59,16 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
+
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+.sheet-up { animation: sheet-up 320ms cubic-bezier(0.32, 0.72, 0, 1); }
+
+[data-slot="toast-region"] [data-slot="toast"] {
+  border-color: #a7d7b4 !important;
+  background: #e8f6ec !important;
+}
+[data-slot="toast-region"] [data-slot="toast-title"] { color: #1f5f34 !important; }
+[data-slot="toast-region"] [data-slot="toast-description"] { color: #2f6b42 !important; }

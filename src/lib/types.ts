@@ -85,6 +85,7 @@ export type Order = {
   swap?: Line;
   called: boolean;
   extra?: boolean;
+  outcome?: "no-order" | "no-delivery";
 };
 
 export type StopResult = {
@@ -160,5 +161,8 @@ export type DemoState = {
   payments: Payment[];
   nextInvoice: number;
   driverRoute: RouteId;
+  driverDate?: string;
   almaRoute: RouteId;
+  almaDate?: string;
+  colinRange?: string;
 };
